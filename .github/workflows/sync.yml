@@ -27,13 +27,8 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 確保檔案存在，如果不存在就建立一個空的，避免 git add 失敗
-          touch lotto_data.json 
-          
           git add lotto_data.json
-          
-          # 檢查是否有變更，沒有變更就不 commit
-          git diff --quiet && git diff --staged --quiet || (git commit -m "自動更新六合彩數據" && git push)
-
+          # 加上 || true 確保即使沒有變更也不會讓整個 Workflow 顯示失敗
+          git commit -m "更新六合彩數據" || true
+          git push
           
