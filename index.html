@@ -5,83 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>六合彩模擬器 (支援膽拖/複式) | EV 期望值分析</title>
     <meta name="description" content="支援六合彩膽拖及複式投注模擬。透過大數據分析期望值 (EV)，即時顯示開獎號碼與中獎注數。">
-    
-
 
     <style>
-        :root { --primary: #4caf50; --bg: #121212; --card: #1e1e1e; --loss: #ff5252; --win: #00e676; --special: #f44336; --banker: #2196f3; --leg: #ff9800; --gold: #ffd700; }
-        body { font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif; background: var(--bg); color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .container { background: var(--card); padding: 25px; border-radius: 15px; width: 100%; max-width: 1000px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .ad-space { background: #262626; border: 1px dashed #444; margin: 15px 0; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px; min-height: 90px; border-radius: 8px; }
+        :root { 
+            --primary: #4caf50; 
+            --bg: #121212; 
+            --card: #1e1e1e; 
+            --loss: #ff5252; 
+            --win: #00e676; 
+            --special: #f44336; 
+            --banker: #2196f3; 
+            --leg: #c2185b; 
+            --gold: #ffd700; 
+        }
+        body { 
+            font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif; 
+            background: var(--bg); 
+            color: #e0e0e0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            margin: 0; 
+        }
+        .container { 
+            background: var(--card); 
+            padding: 25px; 
+            border-radius: 15px; 
+            width: 100%; 
+            max-width: 1000px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
         
         .ball-container { 
-    display: flex; 
-    gap: 4px; /* 從 5px 縮小為 4px */
-    justify-content: center; 
-    padding: 12px 5px; /* 稍微縮小上下 padding */
-    background: #262626; 
-    border-radius: 10px; 
-    margin-bottom: 20px; 
-}
+            display: flex; 
+            gap: 4px; 
+            justify-content: center; 
+            padding: 12px 5px; 
+            background: #262626; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+        }
         .ball { 
-    width: 32px; /* 從 40px 縮小為 32px */
-    height: 32px; 
-    line-height: 28px; /* 扣除 border 厚度使文字垂直居中 */
-    background: #444; 
-    color: #fff; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-weight: bold; 
-    font-size: 14px; /* 文字隨之縮小 */
-    border: 2px solid #555; 
-    flex-shrink: 0; /* 防止擠壓變形 */
-    aspect-ratio: 1 / 1; /* 強制正圓 */
-    box-sizing: border-box; 
-    transition: background 0.2s; /* 增加變色平滑度 */
-}
+            width: 32px; height: 32px; line-height: 28px; 
+            background: #444; color: #fff; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 14px; 
+            border: 2px solid #555; 
+            flex-shrink: 0; aspect-ratio: 1 / 1; 
+            box-sizing: border-box; 
+        }
+        .num-btn.is-matched { 
+            background: linear-gradient(145deg, #ffd700, #ff8c00) !important; 
+            color: #000 !important; 
+            border-color: #fff !important; 
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            transform: scale(1.1);
+        }
+        .num-btn.is-matched-special {
+            border: 3px dashed #f44336 !important;
+        }
+        
         .ball.active { background: #ffeb3b; color: #333; border-color: #fff; box-shadow: 0 0 10px rgba(255,235,59,0.5); }
         .ball.special { background: var(--special); border-color: #ffcdd2; }
 
-        .ticket-box { background: #2d2d2d; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 8px solid #666; }
+        .ticket-box { 
+            background: #2d2d2d; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 12px; 
+            border-left: 8px solid #666; 
+        }
         .ticket-box.multiple { border-left-color: var(--primary); }
         .ticket-box.banker-leg { border-left-color: var(--banker); }
 
-        .grid-49 { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; margin-top: 10px; }
-        .num-btn { padding: 4px; background: #333; border: 1px solid #555; color: white; cursor: pointer; border-radius: 3px; font-size: 11px; }
+        .grid-49 { 
+            display: grid; 
+            grid-template-columns: repeat(13, 1fr); 
+            gap: 4px; 
+            margin-top: 10px; 
+        }
+        .num-btn { 
+            padding: 6px 4px; 
+            background: #333; 
+            border: 1px solid #555; 
+            color: white; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-size: 12px; 
+            font-weight: bold;
+            min-width: 28px;
+            text-align: center;
+        }
         .num-btn.selected { background: var(--primary); border-color: #fff; }
         .num-btn.is-banker { background: var(--banker); border-color: #fff; }
         .num-btn.is-leg { background: var(--leg); border-color: #fff; }
-        
-        .mode-selector { margin-bottom: 10px; display: flex; gap: 10px; }
-        .mode-btn { background: #444; color: #ccc; padding: 5px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; }
+
+        .mode-selector { margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .mode-btn { 
+            background: #444; color: #ccc; 
+            padding: 6px 12px; 
+            font-size: 13px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
         .mode-btn.active { background: #eee; color: #111; }
 
-        .controls { display: flex; gap: 10px; margin: 20px 0; align-items: center; background: #262626; padding: 15px; border-radius: 10px; flex-wrap: wrap; }
-        input[type="number"], select { background: #333; border: 1px solid #555; color: #ffeb3b; padding: 8px; border-radius: 5px; font-weight: bold; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .controls { 
+            display: flex; gap: 10px; margin: 20px 0; 
+            align-items: center; background: #262626; 
+            padding: 15px; border-radius: 10px; flex-wrap: wrap; 
+        }
+        input[type="number"], select { 
+            background: #333; border: 1px solid #555; 
+            color: #ffeb3b; padding: 8px; border-radius: 5px; 
+        }
+        button { padding: 8px 16px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+
         .btn-start { background: #2196f3; color: white; }
         .btn-stop { background: var(--loss); color: white; }
         .btn-target { background: linear-gradient(45deg, #af8c00, #ffd700); color: #111; }
-        
+
         .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: #2d2d2d; padding: 20px; border-radius: 10px; border-top: 4px solid var(--primary); }
         .prize-row { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding: 8px 0; font-size: 13px; }
         .profit-pos { color: var(--win); }
         .profit-neg { color: var(--loss); }
 
-        .legend { display: flex; gap: 15px; font-size: 12px; margin-bottom: 10px; }
+        .legend { display: flex; gap: 15px; font-size: 12px; margin: 8px 0; }
         .legend span::before { content: '■'; margin-right: 5px; }
 
-        @media (max-width: 768px) { .panel { grid-template-columns: 1fr; } .grid-49 { grid-template-columns: repeat(7, 1fr); } }
+        /* 縮小後的彩色方塊 - 關鍵優化 */
+        .summary-chips {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 4px; 
+            margin-top: 8px;
+        }
+        .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;          /* 固定寬度 */
+            height: 28px;         /* 固定高度 */
+            min-width: 28px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+        .chip-selected { background: #4caf50; }     /* 複式綠色 */
+        .chip-banker { background: #2196f3; color: white; }
+        .chip-leg { background: #c2185b; color: white; }   /* 紫色拖 */
+
+        /* 中獎金色效果（縮小狀態也適用） */
+        .chip-matched {
+            background: linear-gradient(145deg, #ffd700, #ff8c00) !important;
+            color: #000 !important;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
+            transform: scale(1.08);
+        }
+        .chip-matched-special {
+            border: 2px dashed #f44336 !important;
+        }
+
+        @media (max-width: 768px) { 
+            .panel { grid-template-columns: 1fr; } 
+            .grid-49 { grid-template-columns: repeat(7, 1fr); } 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-
-
     <h1>香港六合彩模擬器</h1>
 
     <div class="card" style="border-top-color: #ff9800; margin-bottom: 20px;">
@@ -120,7 +219,6 @@
             </select>
             <button class="btn-target" id="targetBtn" onclick="toggleSim(true)">開始尋夢</button>
         </div>
-
         
         <button onclick="resetAll()" style="background:#666; color:white;">重置</button>
         <span id="status">系統就緒</span>
@@ -145,7 +243,7 @@
     </div>
 
     <div class="card" style="border-top-color: #ffeb3b; margin-top: 20px;">
-        <h3> 期望值 (EV) 與中獎率分析</h3>
+        <h3>期望值 (EV) 與中獎率分析</h3>
         <div id="probDisplay" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
         <hr style="border: 0; border-top: 1px dashed #555; margin: 15px 0;">
         <div class="prize-row" style="font-size: 1.1em; font-weight: bold;">
@@ -155,14 +253,13 @@
             <span>每期預期淨損益:</span> <span id="netEvResult" class="profit-neg">$0</span>
         </div>
     </div>
-
-  
 </div>
 
 <script>
+    let lastDraw = { main: [], spec: null };
     let tickets = [];
     let isRunning = false;
-    let isTargetMode = false; // 是否處於直到中獎模式
+    let isTargetMode = false;
     let stats = { draws: 0, p1:0, p2:0, p3:0, p4:0, p5:0, p6:0, p7:0, totalPrizeMoney: 0 };
     
     const PRIZE_DEF = [
@@ -186,7 +283,7 @@
 
     function addTicket() {
         const id = Date.now();
-        const ticket = { id, mode: 'multiple', banker: new Set(), leg: new Set() };
+        const ticket = { id, mode: 'multiple', banker: new Set(), leg: new Set(), expanded: false };
         tickets.push(ticket);
         
         const container = document.getElementById('ticketsContainer');
@@ -195,22 +292,71 @@
         box.id = `ticket-${id}`;
         
         box.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <div class="mode-selector">
                     <div class="mode-btn active" onclick="setMode(${id}, 'multiple')">複式</div>
                     <div class="mode-btn" onclick="setMode(${id}, 'banker-leg')">膽拖</div>
                 </div>
-                <button onclick="removeTicket(${id})" style="background:none; color:var(--loss); cursor:pointer;">[刪除]</button>
+                <div>
+                    <button onclick="toggleExpand(${id})" id="expand-btn-${id}" style="background:#555; color:white; padding:5px 10px; border-radius:4px; margin-right:6px; font-size:15px;">▶</button>
+                    <button onclick="removeTicket(${id})" style="background:none; color:var(--loss); font-size:18px; cursor:pointer;">🗑️</button>
+                </div>
             </div>
-            <div class="legend" id="legend-${id}" style="display:none">
-                <span style="color:var(--banker)">膽 (必選)</span>
-                <span style="color:var(--leg)">拖 (配搭)</span>
+            
+            <div id="setup-hint-${id}" style="margin:10px 0; color:#aaa; font-size:13px;">
+                請選擇模式，然後點擊 ▶ 展開選號
             </div>
-            <div class="grid-49" id="grid-${id}"></div>
+            
+            <div class="legend" id="legend-${id}" style="display:none;">
+                <span style="color:var(--banker)">■ 膽</span>
+                <span style="color:var(--leg)">■ 拖</span>
+            </div>
+            
+            <div class="grid-49" id="grid-${id}" style="display:none;"></div>
+            
+            <div id="summary-${id}" class="summary-chips" style="display:none;"></div>
+            
+            <div id="full-select-${id}" style="display:none; margin-top:8px;">
+                <button onclick="selectAll(${id})" style="background:#9c27b0; color:white; padding:6px 14px; font-size:13px;">F 全選 (全餐)</button>
+            </div>
         `;
+        
         container.appendChild(box);
+        updateUI();
+    }
 
+    function toggleExpand(id) {
+        const t = tickets.find(x => x.id === id);
+        t.expanded = !t.expanded;
+        
         const grid = document.getElementById(`grid-${id}`);
+        const hint = document.getElementById(`setup-hint-${id}`);
+        const summary = document.getElementById(`summary-${id}`);
+        const expandBtn = document.getElementById(`expand-btn-${id}`);
+        const fullBtn = document.getElementById(`full-select-${id}`);
+        
+        if (t.expanded) {
+            grid.style.display = 'grid';
+            hint.style.display = 'none';
+            summary.style.display = 'none';
+            expandBtn.innerText = '▼';
+            fullBtn.style.display = (t.mode === 'multiple') ? 'block' : 'none';
+            if (grid.children.length === 0) createNumberGrid(id);
+            renderGrid(id);
+        } else {
+            grid.style.display = 'none';
+            hint.style.display = 'none';
+            summary.style.display = 'block';
+            expandBtn.innerText = '▶';
+            fullBtn.style.display = 'none';
+            updateSummary(id);
+        }
+        updateUI();
+    }
+
+    function createNumberGrid(id) {
+        const grid = document.getElementById(`grid-${id}`);
+        grid.innerHTML = '';
         for (let i = 1; i <= 49; i++) {
             let b = document.createElement('button');
             b.className = 'num-btn';
@@ -218,7 +364,55 @@
             b.onclick = () => toggleNumber(id, i);
             grid.appendChild(b);
         }
+    }
+
+    function selectAll(id) {
+        const t = tickets.find(x => x.id === id);
+        if (t.mode !== 'multiple') return;
+        for (let i = 1; i <= 49; i++) t.leg.add(i);
+        renderGrid(id);
+        updateSummary(id);
         updateUI();
+    }
+
+    function updateSummary(id) {
+        const t = tickets.find(x => x.id === id);
+        const summaryEl = document.getElementById(`summary-${id}`);
+        summaryEl.innerHTML = '';
+        summaryEl.style.display = 'flex';
+        
+        const isMultiple = t.mode === 'multiple';
+        const selectedNums = isMultiple ? Array.from(t.leg) : [...Array.from(t.banker), ...Array.from(t.leg)];
+        
+        selectedNums.sort((a,b) => a - b).forEach(n => {
+            const chip = document.createElement('span');
+            chip.className = 'summary-chip';
+            chip.textContent = n;
+            
+            // 設定基礎顏色
+            if (isMultiple) {
+                chip.classList.add('chip-selected');
+            } else if (t.banker.has(n)) {
+                chip.classList.add('chip-banker');
+            } else {
+                chip.classList.add('chip-leg');
+            }
+            
+            // 中獎金色效果（縮小狀態也顯示）
+            if (lastDraw.main.includes(n) && (t.banker.has(n) || t.leg.has(n))) {
+                chip.classList.add('chip-matched');
+            }
+            if (n === lastDraw.spec && (t.banker.has(n) || t.leg.has(n))) {
+                chip.classList.add('chip-matched');
+                chip.classList.add('chip-matched-special');
+            }
+            
+            summaryEl.appendChild(chip);
+        });
+        
+        if (selectedNums.length === 0) {
+            summaryEl.innerHTML = '<span style="color:#666; font-size:13px;">尚未選號</span>';
+        }
     }
 
     function setMode(id, mode) {
@@ -226,61 +420,86 @@
         t.mode = mode;
         t.banker.clear();
         t.leg.clear();
+        
         const box = document.getElementById(`ticket-${id}`);
         box.className = `ticket-box ${mode}`;
+        
         box.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.toggle('active', btn.innerText === (mode === 'multiple' ? '複式' : '膽拖'));
         });
+        
         document.getElementById(`legend-${id}`).style.display = (mode === 'banker-leg' ? 'flex' : 'none');
-        renderGrid(id);
+        
+        if (t.expanded) {
+            renderGrid(id);
+            document.getElementById(`full-select-${id}`).style.display = (mode === 'multiple') ? 'block' : 'none';
+        } else {
+            updateSummary(id);
+        }
         updateUI();
     }
 
     function toggleNumber(id, num) {
         const t = tickets.find(x => x.id === id);
+        
         if (t.mode === 'multiple') {
-            if (t.leg.has(num)) t.leg.delete(num);
-            else t.leg.add(num);
+            t.leg.has(num) ? t.leg.delete(num) : t.leg.add(num);
         } else {
             if (t.banker.has(num)) {
                 t.banker.delete(num);
                 t.leg.add(num);
             } else if (t.leg.has(num)) {
                 t.leg.delete(num);
+            } else if (t.banker.size < 5) {
+                t.banker.add(num);
             } else {
-                if (t.banker.size < 5) t.banker.add(num);
-                else t.leg.add(num);
+                t.leg.add(num);
             }
         }
+        
         renderGrid(id);
+        if (!t.expanded) updateSummary(id);
         updateUI();
     }
 
     function renderGrid(id) {
         const t = tickets.find(x => x.id === id);
         const grid = document.getElementById(`grid-${id}`);
+        if (!grid || grid.style.display === 'none') return;
+        
         const btns = grid.querySelectorAll('.num-btn');
         btns.forEach(btn => {
             const n = parseInt(btn.innerText);
             btn.className = 'num-btn';
+
             if (t.mode === 'multiple' && t.leg.has(n)) btn.classList.add('selected');
             if (t.mode === 'banker-leg') {
                 if (t.banker.has(n)) btn.classList.add('is-banker');
                 if (t.leg.has(n)) btn.classList.add('is-leg');
+            }
+
+            if (lastDraw.main.includes(n) && (t.banker.has(n) || t.leg.has(n))) btn.classList.add('is-matched');
+            if (n === lastDraw.spec && (t.banker.has(n) || t.leg.has(n))) {
+                btn.classList.add('is-matched');
+                btn.classList.add('is-matched-special');
             }
         });
     }
 
     function removeTicket(id) {
         tickets = tickets.filter(t => t.id !== id);
-        document.getElementById(`ticket-${id}`).remove();
+        const el = document.getElementById(`ticket-${id}`);
+        if (el) el.remove();
         updateUI();
     }
 
     function resetAll() {
         isRunning = false;
         stats = { draws: 0, p1:0, p2:0, p3:0, p4:0, p5:0, p6:0, p7:0, totalPrizeMoney: 0 };
-        document.querySelectorAll('.ball').forEach(b => { b.innerText = '?'; b.classList.remove('active'); });
+        document.querySelectorAll('.ball').forEach(b => { 
+            b.innerText = '?'; 
+            b.classList.remove('active'); 
+        });
         updateUI();
     }
 
@@ -325,16 +544,26 @@
 
     function performDraw(showBalls = false) {
         stats.draws++;
+        
         let pool = Array.from({length: 49}, (_, i) => i + 1);
         let dMain = [];
-        for(let j=0; j<6; j++) dMain.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+        for(let j=0; j<6; j++) {
+            dMain.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+        }
         let dSpec = pool[Math.floor(Math.random()*pool.length)];
         
+        lastDraw = { main: dMain, spec: dSpec };
+
         if (showBalls) {
-            const sorted = [...dMain].sort((a,b) => a-b);
+            const sortedDisplay = [...dMain].sort((a,b) => a-b);
             const ballElems = document.querySelectorAll('.ball');
-            sorted.forEach((n, i) => { ballElems[i].innerText = n; ballElems[i].classList.add('active'); });
-            ballElems[6].innerText = dSpec; ballElems[6].classList.add('active');
+            sortedDisplay.forEach((n, i) => { 
+                ballElems[i].innerText = n; 
+                ballElems[i].classList.add('active'); 
+            });
+            ballElems[6].innerText = dSpec; 
+            ballElems[6].classList.add('active');
+            tickets.forEach(t => renderGrid(t.id));
         }
 
         const jackpot = parseFloat(document.getElementById('jackpotInput').value) || 8000000;
@@ -342,17 +571,18 @@
         let stopDueToTarget = false;
 
         tickets.forEach(t => {
-            const bankerList = Array.from(t.banker);
-            const legList = Array.from(t.leg);
-            const mBanker = bankerList.filter(n => dMain.includes(n)).length;
+            const mBanker = Array.from(t.banker).filter(n => dMain.includes(n)).length;
             const sBanker = t.banker.has(dSpec) ? 1 : 0;
-            const mLeg = legList.filter(n => dMain.includes(n)).length;
+            const mLeg = Array.from(t.leg).filter(n => dMain.includes(n)).length;
             const sLeg = t.leg.has(dSpec) ? 1 : 0;
-            const r = t.banker.size, k = t.leg.size, need = 6 - r;
+            
+            const r = t.banker.size;
+            const k = t.leg.size;
+            const need = 6 - r;
 
             for (let i=0; i<=need; i++) {
                 for (let j=0; j<=(need-i); j++) {
-                    if (j > sLeg) continue; 
+                    if (j > sLeg) continue;
                     const ways = combinations(mLeg, i) * combinations(sLeg, j) * combinations(k - mLeg - sLeg, need - i - j);
                     if (ways === 0) continue;
 
@@ -372,8 +602,6 @@
                         stats['p' + currentPrizeLevel] += ways;
                         const prizeAmounts = [0, jackpot, 1000000, 40000, 9600, 640, 320, 40];
                         stats.totalPrizeMoney += ways * prizeAmounts[currentPrizeLevel];
-                        
-                        // 直到中獎檢查
                         if (isTargetMode && currentPrizeLevel === targetLevel) stopDueToTarget = true;
                     }
                 }
@@ -382,9 +610,16 @@
 
         if (stopDueToTarget) {
             isRunning = false;
-            performDraw(true); // 強制顯示中獎那一期的球
-            alert(`恭喜！在第 ${stats.draws.toLocaleString()} 期中到了目標獎項！`);
+            performDraw(true);
+            setTimeout(() => {
+                alert(`🏆 尋夢成功！在第 ${stats.draws.toLocaleString()} 期中到了目標獎項！`);
+            }, 100);
         }
+        
+        // 每次開獎後更新所有收起狀態的摘要（讓金色效果即時顯示）
+        tickets.forEach(t => {
+            if (!t.expanded) updateSummary(t.id);
+        });
     }
 
     function loop() {
@@ -396,7 +631,7 @@
             document.getElementById('targetBtn').className = "btn-target";
             return;
         }
-        // 直到中獎模式下加強效能
+        
         let batchSize = isTargetMode ? 2000 : 500;
         for (let i = 0; i < batchSize; i++) {
             performDraw(false);
